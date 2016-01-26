@@ -6,90 +6,91 @@ Version 1.6 with Hadoop 2.6`
 2. Unzip the downloaded file
  
 3. Create new Gradle Project for Kotlin with the following build.gradle file
-
-        buildscript {
-
-            ext.kotlin_version = '1.0.0-beta-4584'
-
-            repositories {
-                mavenCentral()
-            }
-            dependencies {
-                classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-            }
-        }
-
-        apply plugin: 'java'
-        apply plugin: 'kotlin'
-        apply plugin: 'idea'
-
-        sourceCompatibility = 1.8
-        targetCompatibility = 1.8
-
-        repositories {
-            mavenCentral()
-        }
-
-        dependencies {
-            compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-            compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
-            compile 'org.apache.spark:spark-core_2.10:1.6.0'
-        }
-
-        task wrapper(type: Wrapper) {
-            gradleVersion = '2.3'
-        }
-
-        sourceSets {
-            main.java.srcDirs += 'src/main/kotlin'
-        }
-
-        // Create a fat jar with kotlin runtime
-        jar {
-            dependsOn configurations.runtime
-            from {
-                (configurations.runtime - configurations.provided).collect {
-                    it.isDirectory() ? it : zipTree(it)
-                }
-            } {
-                exclude "META-INF/*"
-            }
-        }
-
-        configurations {
-            provided
-            compile.extendsFrom provided
-        }
-
+  ```groovy
+ buildscript {
+ 
+     ext.kotlin_version = '1.0.0-beta-4584'
+ 
+     repositories {
+         mavenCentral()
+     }
+     dependencies {
+         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+     }
+ }
+ 
+ apply plugin: 'java'
+ apply plugin: 'kotlin'
+ apply plugin: 'idea'
+ 
+ sourceCompatibility = 1.8
+ targetCompatibility = 1.8
+ 
+ repositories {
+     mavenCentral()
+ }
+ 
+ dependencies {
+     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+     compile 'org.apache.spark:spark-core_2.10:1.6.0'
+ }
+ 
+ task wrapper(type: Wrapper) {
+     gradleVersion = '2.3'
+ }
+ 
+ sourceSets {
+     main.java.srcDirs += 'src/main/kotlin'
+ }
+ 
+ // Create a fat jar with kotlin runtime
+ jar {
+     dependsOn configurations.runtime
+     from {
+         (configurations.runtime - configurations.provided).collect {
+             it.isDirectory() ? it : zipTree(it)
+         }
+     } {
+         exclude "META-INF/*"
+     }
+ }
+ 
+ configurations {
+     provided
+     compile.extendsFrom provided
+ }
+  ```
 
 4. Create WordCount.kt File with main function
-
-        package me.florianschmidt.sparkExample
-        
-        import org.apache.spark.SparkConf
-        import org.apache.spark.api.java.JavaSparkContext
-        import scala.Tuple2
-        import java.util.*
-        
-        object WordCount {
-        
-            @JvmStatic fun main(args: Array<String>) {
-                if (args.size < 1) {
-                    System.err.println("Please provide the input file full path as argument")
-                    System.exit(0)
-                }
-        
-                val conf = SparkConf().setAppName("me.florianschmidt.sparkExample.WordCount").setMaster("local")
-                val context = JavaSparkContext(conf)
-        
-                context.textFile(args[0]).flatMap { elem -> Arrays.asList(elem.split(" ")) }
-                          .mapToPair { elem -> Tuple2(elem, 1) }  // Create Tuple of form (word, 1)
-                          .reduceByKey { a, b -> a!! + b!! }      // Sum up identical words (word, n)
-                          .mapToPair { it.swap() }                // Swap tuple (n, word)
-                          .sortByKey()                            // Sort by n (default = ascending)
-                          .saveAsTextFile("output")               // Save output in folder "output"
-            }
-        }
+  ```kotlin
+  package me.florianschmidt.sparkExample
+  
+  import org.apache.spark.SparkConf
+  import org.apache.spark.api.java.JavaSparkContext
+  import scala.Tuple2
+  import java.util.*
+  
+  object WordCount {
+  
+      @JvmStatic fun main(args: Array<String>) {
+          if (args.size < 1) {
+              System.err.println("Please provide the input file full path as argument")
+              System.exit(0)
+          }
+  
+          val conf = SparkConf().setAppName("me.florianschmidt.sparkExample.WordCount").setMaster("local")
+          val context = JavaSparkContext(conf)
+  
+          context.textFile(args[0]).flatMap { elem -> Arrays.asList(elem.split(" ")) }
+                    .mapToPair { elem -> Tuple2(elem, 1) }  // Create Tuple of form (word, 1)
+                    .reduceByKey { a, b -> a!! + b!! }      // Sum up identical words (word, n)
+                    .mapToPair { it.swap() }                // Swap tuple (n, word)
+                    .sortByKey()                            // Sort by n (default = ascending)
+                    .saveAsTextFile("output")               // Save output in folder "output"
+      }
+  }
+  ```
 
 5. Download sample input file (e.g. https://www.gutenberg.org/ebooks/4300)
 
