@@ -25,9 +25,6 @@ dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
     compile 'org.apache.spark:spark-core_2.10:1.6.0'
-
-    testCompile "org.jetbrains.kotlin:kotlin-test:$kotlin_version"
-    testCompile("junit:junit")
 }
 
 task wrapper(type: Wrapper) {
@@ -36,4 +33,20 @@ task wrapper(type: Wrapper) {
 
 sourceSets {
     main.java.srcDirs += 'src/main/kotlin'
+}
+
+jar {
+    dependsOn configurations.runtime
+    from {
+        (configurations.runtime - configurations.provided).collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    } {
+        exclude "META-INF/*"
+    }
+}
+
+configurations {
+    provided
+    compile.extendsFrom provided
 }
